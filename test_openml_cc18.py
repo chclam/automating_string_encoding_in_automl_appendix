@@ -70,7 +70,7 @@ if __name__ == "__main__":
       cv = pickle.load(f) 
  
     # Set result data
-    res            = config.RESULT_FORMAT
+    res            = config.RESULT_FORMAT.copy()
     res["data_id"] = dataset.id
     res["name"]    = dataset.name
     res["metric"]  = scorer_name
@@ -80,9 +80,10 @@ if __name__ == "__main__":
 
     try:
       y = pd.Series(LabelEncoder().fit_transform(y), index=y.index)
-      # prepare pipeline
-     
+      # set string features to "category" to avoid issues in libraries
       str_features = [col for col in X if isinstance(X[col].dtype, pd.core.dtypes.dtypes.CategoricalDtype) or X[col].dtype == "O"]
+      X[str_features] = X[str_features].astype("category")
+     
       ct = ColumnTransformer(transformers=[("encoder", config.PIPELINE_CONFIG["string_encoder"], str_features)],
                              remainder="passthrough")
 
