@@ -11,6 +11,7 @@ import pandas as pd
 from tqdm import trange
 from sklearn.metrics import roc_auc_score, log_loss, make_scorer
 from sklearn.pipeline import make_pipeline
+from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import cross_validate
 
@@ -80,7 +81,12 @@ if __name__ == "__main__":
     try:
       y = pd.Series(LabelEncoder().fit_transform(y), index=y.index)
       # prepare pipeline
-      pipe = make_pipeline(config.PIPELINE_CONFIG["string_encoder"],
+     
+      str_features = [col for col in X if isinstance(X[col].dtype, pd.core.dtypes.dtypes.CategoricalDtype) or X[col].dtype == "O"]
+      ct = ColumnTransformer(transformers=[("encoder", config.PIPELINE_CONFIG["string_encoder"], str_features)],
+                             remainder="passthrough")
+
+      pipe = make_pipeline(ct,
                            config.PIPELINE_CONFIG["imputer"],
                            config.PIPELINE_CONFIG["learning_algorithm"])
 
