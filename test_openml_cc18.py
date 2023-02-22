@@ -93,7 +93,7 @@ if __name__ == "__main__":
       scorer = make_scorer(score_func, greater_is_better=(scorer_name=="roc_auc"),
                            needs_proba=True, labels=y.unique())
 
-      cv_results = cross_validate(estimator=pipe, X=X, y=y, scoring=scorer, cv=cv, n_jobs=5)
+      cv_results = cross_validate(estimator=pipe, X=X, y=y, scoring=scorer, cv=cv, n_jobs=config.N_JOBS)
 
       res["fit_time"]     = np.nanmean(cv_results.get("fit_time"))
       res["predict_time"] = np.nanmean(cv_results.get("score_time"))
