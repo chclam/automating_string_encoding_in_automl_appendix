@@ -5,12 +5,12 @@ from dirty_cat import SimilarityEncoder, GapEncoder, MinHashEncoder
 OPENML_APIKEY   = ""
 CV_DIR          = "cv_folds"
 CACHE_DIR       = "cache"
-OUTPUT_DIR      = "openml_cc18_dirty_cat"
+OUTPUT_FILENAME = "results.csv"
 
 PIPELINE_CONFIG = {
-  "string_encoder"    : SimilarityEncoder,
-  "imputer"           : SimpleImputer,
-  "learning_algorithm": RandomForestClassifier
+  "string_encoder"    : SimilarityEncoder(),
+  "imputer"           : SimpleImputer(strategy="most_frequent"),
+  "learning_algorithm": RandomForestClassifier()
 }
 
 RESULT_FORMAT = {
@@ -20,7 +20,7 @@ RESULT_FORMAT = {
   "string_encoder"    : "",
   "imputer"           : "",
   "learning_algorithm": "",
-  "score"             : -1,
-  "train_time"        : -1,
+  "avg_cv_score"      : -1,
+  "fit_time"          : -1,
   "predict_time"      : -1,
 }
