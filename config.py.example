@@ -1,0 +1,13 @@
+from sklearn.impute import SimpleImputer
+from sklearn.ensemble import RandomForestClassifier
+from dirty_cat import SimilarityEncoder, GapEncoder, MinHashEncoder
+
+OPENML_APIKEY   = ""
+CV_DIR          = "cv_folds"
+CACHE_DIR       = "cache"
+OUTPUT_DIR      = "openml_cc18_dirty_cat"
+PIPELINE_CONFIG = {
+  "string_encoder"    : SimilarityEncoder,
+  "imputer"           : SimpleImputer,
+  "learning_algorithm": RandomForestClassifier
+}
