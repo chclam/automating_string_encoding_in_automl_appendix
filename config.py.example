@@ -6,8 +6,21 @@ OPENML_APIKEY   = ""
 CV_DIR          = "cv_folds"
 CACHE_DIR       = "cache"
 OUTPUT_DIR      = "openml_cc18_dirty_cat"
+
 PIPELINE_CONFIG = {
   "string_encoder"    : SimilarityEncoder,
   "imputer"           : SimpleImputer,
   "learning_algorithm": RandomForestClassifier
+}
+
+RESULT_FORMAT = {
+  "data_id"           : "",
+  "name"              : "",
+  "metric"            : "",
+  "string_encoder"    : "",
+  "imputer"           : "",
+  "learning_algorithm": "",
+  "score"             : -1,
+  "train_time"        : -1,
+  "predict_time"      : -1,
 }

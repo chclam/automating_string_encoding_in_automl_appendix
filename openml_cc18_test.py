@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 import os
-import json
+import csv
 import time
 import pickle
 import openml
@@ -44,9 +44,6 @@ if __name__ == "__main__":
     logging.error("No folder for CV folds found: {}".format(config.CV_DIR))
     exit(1)
 
-  if not os.path.isdir(config.OUTPUT_DIR):
-    os.mkdir(config.OUTPUT_DIR)
-
   for i, t_id in zip(trange(len(benchmark_suite.tasks)), benchmark_suite.tasks):
     try:
       logging.info("Loading dataset from OpenML.")
@@ -70,18 +67,14 @@ if __name__ == "__main__":
     with open(f"{config.CV_DIR}/{dataset.id}.pkl", "rb") as f:
       cv = pickle.load(f) 
  
+    # TODO: use cross validation
     for fold_nr, (train_idx, test_idx) in enumerate(cv):
-      output_filename = f"{dataset.id}_{fold_nr}.json"
-      output_path     = os.path.join(config.OUTPUT_DIR, output_filename)
-      fold_res        = {
-        "data_id"     : dataset.id,
-        "name"        : dataset.name,
-        "metric"      : scorer_name,
-        "score"       : -1,
-        "train_time"  : -1,
-        "predict_time": -1,
-      }
-      # append the pipeline config into fold_res
+      # Set result data
+      fold_res            = config.RESULT_FORMAT
+      fold_res["data_id"] = str(dataset.id)
+      fold_res["name"]    = dataset.name
+      fold_res["metric"]  = scorer_name
+      # Write experimental setup to result data
       pipeline_config_names = {setting: value.__name__ for setting, value in config.PIPELINE_CONFIG.items()}
       fold_res.update(pipeline_config_names)
 
@@ -114,14 +107,16 @@ if __name__ == "__main__":
         else:
           fold_res["score"] = scorer(y_test, y_proba, labels=np.unique(y))
 
-        with open(output_path, "w") as f:
-          json.dump(fold_res, f)
-
       except Exception as e:
         logging.error(f"Error with fold: {e}")
+
       finally:
-        with open(output_path, "w") as f:
-          json.dump(fold_res, f)
+        results_file_exists = os.path.isfile(config.OUTPUT_FILENAME)
+        with open(config.OUTPUT_FILENAME, "a+") as f:
+          w = csv.DictWriter(f, fold_res.keys())
+          if not results_file_exists:
+            w.writeheader()
+          w.writerow(fold_res)
 
     exit(0)
         
