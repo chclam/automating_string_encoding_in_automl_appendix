@@ -20,6 +20,13 @@ import config
 logging.basicConfig(level=logging.INFO)
 openml.config.apikey = config.OPENML_APIKEY  # set the OpenML Api Key
 
+'''
+TODOs: 
+ * Output the result of each fold to result.csv -> to better illustrate errors in folds
+ * Change discrete steps for PIPELINE_CONFIG to a simple list of steps:
+   Instead of {"encoder": ..., "imputer": ...} -> [SimilarityEncoder(), SimpleImputer(), ...]
+'''
+
 def get_openml_cc18_benchmark():
   '''
   The OpenML servers are slow.
