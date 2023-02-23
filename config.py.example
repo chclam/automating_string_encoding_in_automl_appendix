@@ -6,7 +6,7 @@ OPENML_APIKEY   = ""
 CV_DIR          = "cv_folds"
 CACHE_DIR       = "cache"
 OUTPUT_FILENAME = "results.csv"
-N_JOBS          = 5
+CV_N_JOBS          = 5
 
 PIPELINE_CONFIGS = [
   {

@@ -81,7 +81,7 @@ def evaluate_pipeline(X, y, dataset, cv: list, pipeline_config: dict) -> None:
                          needs_proba=True, labels=y.unique())
 
     logging.info("Starting cross validation.")
-    cv_results = cross_validate(estimator=pipe, X=X, y=y, scoring=scorer, cv=cv, n_jobs=config.N_JOBS)
+    cv_results = cross_validate(estimator=pipe, X=X, y=y, scoring=scorer, cv=cv, n_jobs=config.CV_N_JOBS)
 
     for fold_idx in range(len(results)):
       results[fold_idx].update({
