@@ -53,10 +53,6 @@ def perform_experiment(X, y,dataset, cv: list, pipeline_config: dict) -> None:
     scorer_name = "neg_log_loss"
     score_func = log_loss
 
-  logging.info("Loading CV folds.")
-  with open(f"{config.CV_DIR}/{dataset.id}.pkl", "rb") as f:
-    cv = pickle.load(f) 
-
   # Prepare formatting of the results for every cv-fold
   fold_res = config.RESULT_FORMAT.copy()
   fold_res.update({
@@ -113,7 +109,7 @@ if __name__ == "__main__":
     logging.exception("No folder for CV folds found: {}".format(config.CV_DIR))
     exit(1)
 
-  for i, t_id in zip(trange(len(benchmark_suite.tasks)), benchmark_suite.tasks):
+  for _, t_id in zip(trange(len(benchmark_suite.tasks)), benchmark_suite.tasks):
     try:
       logging.info("Loading dataset from OpenML.")
       task = openml.tasks.get_task(t_id)
@@ -125,6 +121,10 @@ if __name__ == "__main__":
     except Exception as e:
       logging.exception("OpenML error", e)
 
+    logging.info("Loading CV folds.")
+    with open(f"{config.CV_DIR}/{dataset.id}.pkl", "rb") as f:
+      cv = pickle.load(f) 
+
     if isinstance(config.PIPELINE_CONFIGS, dict):
       perform_experiment(X, y, dataset, cv, config.PIPELINE_CONFIGS)
     elif isinstance(config.PIPELINE_CONFIGS, list):
@@ -133,6 +133,6 @@ if __name__ == "__main__":
       for pipeline_config in config.PIPELINE_CONFIGS:
         perform_experiment(X, y, dataset, cv, pipeline_config)
     else:
-      raise ValueError("Make sure that the PIPELINE_CONFIG is either a dict or a list.")
+      raise ValueError("PIPELINE_CONFIG is not of type dict or a list.")
  
 
