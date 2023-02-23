@@ -85,13 +85,14 @@ def perform_experiment(X, y, cv: list, pipeline_config: dict) -> None:
     except Exception as e:
       logging.exception(f"Error with fold: {e}")
 
-    # write results
-    results_file_exists = os.path.isfile(config.OUTPUT_FILENAME)
-    with open(config.OUTPUT_FILENAME, "a+") as f:
-      w = csv.DictWriter(f, results[0].keys())
-      if not results_file_exists:
-        w.writeheader()
-      w.writerows(results)
+    finally:
+      # write results
+      results_file_exists = os.path.isfile(config.OUTPUT_FILENAME)
+      with open(config.OUTPUT_FILENAME, "a+") as f:
+        w = csv.DictWriter(f, results[0].keys())
+        if not results_file_exists:
+          w.writeheader()
+        w.writerows(results)
 
 if __name__ == "__main__":
   benchmark_suite = get_openml_cc18_benchmark()
