@@ -45,7 +45,7 @@ def get_openml_cc18_benchmark():
       pickle.dump(benchmark_suite, f)
   return benchmark_suite
 
-def perform_experiment(X, y,dataset, cv: list, pipeline_config: dict) -> None:
+def perform_experiment(X, y, dataset, cv: list, pipeline_config: dict) -> None:
   if len(np.unique(y)) == 2:
     scorer_name = "roc_auc"
     score_func = roc_auc_score
