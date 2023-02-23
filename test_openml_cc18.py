@@ -38,8 +38,8 @@ def evaluate_pipeline(X, y, dataset, cv: list, pipeline_config: dict) -> None:
   fold_res = config.RESULT_FORMAT.copy()
   fold_res.update({
     "data_id": dataset.id,
-    "name"   : dataset.name,
-    "metric" : scorer_name
+    "name": dataset.name,
+    "metric": scorer_name
   })
   pipeline_config_names = {setting: str(value) for setting, value in pipeline_config.items()}
   fold_res.update(pipeline_config_names)
@@ -51,31 +51,22 @@ def evaluate_pipeline(X, y, dataset, cv: list, pipeline_config: dict) -> None:
     str_features = [col for col in X if isinstance(X[col].dtype, pd.core.dtypes.dtypes.CategoricalDtype) or X[col].dtype == "O"]
     X[str_features] = X[str_features].astype("category")
    
-    ct = ColumnTransformer(transformers=[("encoder", pipeline_config["string_encoder"], str_features)],
-                           remainder="passthrough")
-
-    pipe = make_pipeline(ct,
-                         pipeline_config["imputer"],
-                         pipeline_config["learning_algorithm"])
-
-    scorer = make_scorer(score_func, greater_is_better=(scorer_name=="roc_auc"),
-                         needs_proba=True, labels=y.unique())
+    ct = ColumnTransformer(transformers=[("encoder", pipeline_config["string_encoder"], str_features)], remainder="passthrough")
+    pipe = make_pipeline(ct, pipeline_config["imputer"], pipeline_config["learning_algorithm"])
+    scorer = make_scorer(score_func, greater_is_better=(scorer_name=="roc_auc"), needs_proba=True, labels=y.unique())
 
     logging.info("Starting cross validation.")
     cv_results = cross_validate(estimator=pipe, X=X, y=y, scoring=scorer, cv=cv, n_jobs=config.CV_N_JOBS)
 
     for fold_idx in range(len(results)):
       results[fold_idx].update({
-        "fit_time"    : cv_results.get("fit_time")[fold_idx],
+        "fit_time": cv_results.get("fit_time")[fold_idx],
         "predict_time": cv_results.get("score_time")[fold_idx],
-        "cv_score"    : cv_results.get("test_score")[fold_idx],
+        "cv_score": cv_results.get("test_score")[fold_idx],
       })
-
   except Exception as e:
     logging.exception(f"Error with fold: {e}")
-
   finally:
-    # write results
     results_file_exists = os.path.isfile(config.OUTPUT_FILENAME)
     with open(config.OUTPUT_FILENAME, "a+") as f:
       w = csv.DictWriter(f, results[0].keys())
@@ -95,10 +86,7 @@ if __name__ == "__main__":
       logging.info("Loading dataset from OpenML.")
       task = openml.tasks.get_task(t_id)
       dataset = task.get_dataset()
-      X, y, _, _ = dataset.get_data(
-        target=dataset.default_target_attribute, dataset_format="dataframe"
-      )
-
+      X, y, _, _ = dataset.get_data(target=dataset.default_target_attribute, dataset_format="dataframe")
     except Exception as e:
       logging.exception("OpenML error", e)
 
