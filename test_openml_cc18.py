@@ -45,6 +45,54 @@ def get_openml_cc18_benchmark():
       pickle.dump(benchmark_suite, f)
   return benchmark_suite
 
+def perform_experiment(X, y, cv: list, pipeline_config: dict) -> None:
+    # Prepare formatting of the results for every cv-fold
+    fold_res = config.RESULT_FORMAT.copy()
+    fold_res.update({
+      "data_id": dataset.id,
+      "name"   : dataset.name,
+      "metric" : scorer_name
+    })
+    pipeline_config_names = {setting: str(value) for setting, value in pipeline_config.items()}
+    fold_res.update(pipeline_config_names)
+    results = [(fold_res.copy() | {"fold_nr": cv_idx}) for cv_idx in range(len(cv))] 
+
+    try:
+      y = pd.Series(LabelEncoder().fit_transform(y), index=y.index)
+      # set string features to "category" to avoid issues in libraries
+      str_features = [col for col in X if isinstance(X[col].dtype, pd.core.dtypes.dtypes.CategoricalDtype) or X[col].dtype == "O"]
+      X[str_features] = X[str_features].astype("category")
+     
+      ct = ColumnTransformer(transformers=[("encoder", pipeline_config["string_encoder"], str_features)],
+                             remainder="passthrough")
+
+      pipe = make_pipeline(ct,
+                           pipeline_config["imputer"],
+                           pipeline_config["learning_algorithm"])
+
+      scorer = make_scorer(score_func, greater_is_better=(scorer_name=="roc_auc"),
+                           needs_proba=True, labels=y.unique())
+
+      cv_results = cross_validate(estimator=pipe, X=X, y=y, scoring=scorer, cv=cv, n_jobs=config.N_JOBS)
+
+      for fold_idx in range(len(results)):
+        results[fold_idx].update({
+          "fit_time"    : cv_results.get("fit_time")[fold_idx],
+          "predict_time": cv_results.get("score_time")[fold_idx],
+          "cv_score"    : cv_results.get("test_score")[fold_idx],
+        })
+
+    except Exception as e:
+      logging.exception(f"Error with fold: {e}")
+
+    # write results
+    results_file_exists = os.path.isfile(config.OUTPUT_FILENAME)
+    with open(config.OUTPUT_FILENAME, "a+") as f:
+      w = csv.DictWriter(f, results[0].keys())
+      if not results_file_exists:
+        w.writeheader()
+      w.writerows(results)
+
 if __name__ == "__main__":
   benchmark_suite = get_openml_cc18_benchmark()
 
@@ -74,51 +122,15 @@ if __name__ == "__main__":
     logging.info("Loading CV folds.")
     with open(f"{config.CV_DIR}/{dataset.id}.pkl", "rb") as f:
       cv = pickle.load(f) 
+
+    if isinstance(config.PIPELINE_CONFIGS, dict):
+      perform_experiment(X, y, cv, config.PIPELINE_CONFIGS)
+    elif isinstance(config.PIPELINE_CONFIGS, list):
+      if not all(config.PIPELINE_CONFIGS[0].keys() == pipeline_config.keys() for pipeline_config in config.PIPELINE_CONFIGS):
+        raise ValueError("The pipeline configurations do not match up. Please check your configurations.")
+      for pipeline_config in config.PIPELINE_CONFIGS:
+        perform_experiment(X, y, cv, pipeline_config)
+    else:
+      raise ValueError("Make sure that the PIPELINE_CONFIG is either a dict or a list.")
  
-    # Prepare formatting of the results for every cv-fold
-    fold_res = config.RESULT_FORMAT.copy()
-    fold_res.update({
-      "data_id": dataset.id,
-      "name"   : dataset.name,
-      "metric" : scorer_name
-    })
-    pipeline_config_names = {setting: str(value) for setting, value in config.PIPELINE_CONFIG.items()}
-    fold_res.update(pipeline_config_names)
-    results = [(fold_res.copy() | {"fold_nr": cv_idx}) for cv_idx in range(len(cv))] 
-
-    try:
-      y = pd.Series(LabelEncoder().fit_transform(y), index=y.index)
-      # set string features to "category" to avoid issues in libraries
-      str_features = [col for col in X if isinstance(X[col].dtype, pd.core.dtypes.dtypes.CategoricalDtype) or X[col].dtype == "O"]
-      X[str_features] = X[str_features].astype("category")
-     
-      ct = ColumnTransformer(transformers=[("encoder", config.PIPELINE_CONFIG["string_encoder"], str_features)],
-                             remainder="passthrough")
-
-      pipe = make_pipeline(ct,
-                           config.PIPELINE_CONFIG["imputer"],
-                           config.PIPELINE_CONFIG["learning_algorithm"])
-
-      scorer = make_scorer(score_func, greater_is_better=(scorer_name=="roc_auc"),
-                           needs_proba=True, labels=y.unique())
-
-      cv_results = cross_validate(estimator=pipe, X=X, y=y, scoring=scorer, cv=cv, n_jobs=config.N_JOBS)
-
-      for fold_idx in range(len(results)):
-        results[fold_idx].update({
-          "fit_time"    : cv_results.get("fit_time")[fold_idx],
-          "predict_time": cv_results.get("score_time")[fold_idx],
-          "cv_score"    : cv_results.get("test_score")[fold_idx],
-        })
-
-    except Exception as e:
-      logging.exception(f"Error with fold: {e}")
-
-    finally:
-      results_file_exists = os.path.isfile(config.OUTPUT_FILENAME)
-      with open(config.OUTPUT_FILENAME, "a+") as f:
-        w = csv.DictWriter(f, results[0].keys())
-        if not results_file_exists:
-          w.writeheader()
-        w.writerows(results)
 

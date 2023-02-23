@@ -8,11 +8,23 @@ CACHE_DIR       = "cache"
 OUTPUT_FILENAME = "results.csv"
 N_JOBS          = 5
 
-PIPELINE_CONFIG = {
-  "string_encoder"    : SimilarityEncoder(),
-  "imputer"           : SimpleImputer(strategy="most_frequent"),
-  "learning_algorithm": RandomForestClassifier()
-}
+PIPELINE_CONFIGS = [
+  {
+    "string_encoder"    : SimilarityEncoder(),
+    "imputer"           : SimpleImputer(strategy="most_frequent"),
+    "learning_algorithm": RandomForestClassifier()
+  },
+  {
+    "string_encoder"    : GapEncoder(),
+    "imputer"           : SimpleImputer(strategy="most_frequent"),
+    "learning_algorithm": RandomForestClassifier()
+  },
+  {
+    "string_encoder"    : MinHashEncoder(),
+    "imputer"           : SimpleImputer(strategy="most_frequent"),
+    "learning_algorithm": RandomForestClassifier()
+  },
+]
 
 RESULT_FORMAT = {
   "data_id"           : "",
