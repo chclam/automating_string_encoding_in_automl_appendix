@@ -76,14 +76,16 @@ if __name__ == "__main__":
     with open(f"{config.CV_DIR}/{dataset.id}.pkl", "rb") as f:
       cv = pickle.load(f) 
  
-    # Set result data
-    res            = config.RESULT_FORMAT.copy()
-    res["data_id"] = dataset.id
-    res["name"]    = dataset.name
-    res["metric"]  = scorer_name
-    # Write experimental setup to result data
+    # Prepare formatting of the results for every cv-fold
+    fold_res = config.RESULT_FORMAT.copy()
+    fold_res.update({
+      "data_id": dataset.id,
+      "name"   : dataset.name,
+      "metric" : scorer_name
+    })
     pipeline_config_names = {setting: str(value) for setting, value in config.PIPELINE_CONFIG.items()}
-    res.update(pipeline_config_names)
+    fold_res.update(pipeline_config_names)
+    results = [(fold_res.copy() | {"fold_nr": cv_idx}) for cv_idx in range(len(cv))] 
 
     try:
       y = pd.Series(LabelEncoder().fit_transform(y), index=y.index)
@@ -103,9 +105,12 @@ if __name__ == "__main__":
 
       cv_results = cross_validate(estimator=pipe, X=X, y=y, scoring=scorer, cv=cv, n_jobs=config.N_JOBS)
 
-      res["fit_time"]     = np.nanmean(cv_results.get("fit_time"))
-      res["predict_time"] = np.nanmean(cv_results.get("score_time"))
-      res["avg_cv_score"] = np.nanmean(cv_results.get("test_score"))
+      for fold_idx in range(len(results)):
+        results[fold_idx].update({
+          "fit_time"    : cv_results.get("fit_time")[fold_idx],
+          "predict_time": cv_results.get("score_time")[fold_idx],
+          "cv_score"    : cv_results.get("test_score")[fold_idx],
+        })
 
     except Exception as e:
       logging.exception(f"Error with fold: {e}")
@@ -113,8 +118,8 @@ if __name__ == "__main__":
     finally:
       results_file_exists = os.path.isfile(config.OUTPUT_FILENAME)
       with open(config.OUTPUT_FILENAME, "a+") as f:
-        w = csv.DictWriter(f, res.keys())
+        w = csv.DictWriter(f, results[0].keys())
         if not results_file_exists:
           w.writeheader()
-        w.writerow(res)
+        w.writerows(results)
 

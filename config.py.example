@@ -17,11 +17,12 @@ PIPELINE_CONFIG = {
 RESULT_FORMAT = {
   "data_id"           : "",
   "name"              : "",
+  "fold_nr"           : "",
   "metric"            : "",
   "string_encoder"    : "",
   "imputer"           : "",
   "learning_algorithm": "",
-  "avg_cv_score"      : -1,
+  "cv_score"          : -1,
   "fit_time"          : -1,
   "predict_time"      : -1,
 }
