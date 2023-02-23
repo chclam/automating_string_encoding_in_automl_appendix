@@ -45,7 +45,7 @@ def get_openml_cc18_benchmark():
       pickle.dump(benchmark_suite, f)
   return benchmark_suite
 
-def perform_experiment(X, y, dataset, cv: list, pipeline_config: dict) -> None:
+def evaluate_pipeline(X, y, dataset, cv: list, pipeline_config: dict) -> None:
   if len(np.unique(y)) == 2:
     scorer_name = "roc_auc"
     score_func = roc_auc_score
@@ -126,12 +126,12 @@ if __name__ == "__main__":
       cv = pickle.load(f) 
 
     if isinstance(config.PIPELINE_CONFIGS, dict):
-      perform_experiment(X, y, dataset, cv, config.PIPELINE_CONFIGS)
+      evaluate_pipeline(X, y, dataset, cv, config.PIPELINE_CONFIGS)
     elif isinstance(config.PIPELINE_CONFIGS, list):
       if not all(config.PIPELINE_CONFIGS[0].keys() == pipeline_config.keys() for pipeline_config in config.PIPELINE_CONFIGS):
         raise ValueError("The pipeline configurations do not match up. Please check your configurations.")
       for pipeline_config in config.PIPELINE_CONFIGS:
-        perform_experiment(X, y, dataset, cv, pipeline_config)
+        evaluate_pipeline(X, y, dataset, cv, pipeline_config)
     else:
       raise ValueError("PIPELINE_CONFIG is not of type dict or a list.")
  
