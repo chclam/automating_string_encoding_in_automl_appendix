@@ -45,7 +45,18 @@ def get_openml_cc18_benchmark():
       pickle.dump(benchmark_suite, f)
   return benchmark_suite
 
-def perform_experiment(X, y, cv: list, pipeline_config: dict) -> None:
+def perform_experiment(X, y,dataset, cv: list, pipeline_config: dict) -> None:
+    if len(np.unique(y)) == 2:
+      scorer_name = "roc_auc"
+      score_func = roc_auc_score
+    else:
+      scorer_name = "neg_log_loss"
+      score_func = log_loss
+
+    logging.info("Loading CV folds.")
+    with open(f"{config.CV_DIR}/{dataset.id}.pkl", "rb") as f:
+      cv = pickle.load(f) 
+
     # Prepare formatting of the results for every cv-fold
     fold_res = config.RESULT_FORMAT.copy()
     fold_res.update({
@@ -73,6 +84,7 @@ def perform_experiment(X, y, cv: list, pipeline_config: dict) -> None:
       scorer = make_scorer(score_func, greater_is_better=(scorer_name=="roc_auc"),
                            needs_proba=True, labels=y.unique())
 
+      logging.info("Starting cross validation.")
       cv_results = cross_validate(estimator=pipe, X=X, y=y, scoring=scorer, cv=cv, n_jobs=config.N_JOBS)
 
       for fold_idx in range(len(results)):
@@ -113,24 +125,13 @@ if __name__ == "__main__":
     except Exception as e:
       logging.exception("OpenML error", e)
 
-    if len(np.unique(y)) == 2:
-      scorer_name = "roc_auc"
-      score_func = roc_auc_score
-    else:
-      scorer_name = "neg_log_loss"
-      score_func = log_loss
-
-    logging.info("Loading CV folds.")
-    with open(f"{config.CV_DIR}/{dataset.id}.pkl", "rb") as f:
-      cv = pickle.load(f) 
-
     if isinstance(config.PIPELINE_CONFIGS, dict):
-      perform_experiment(X, y, cv, config.PIPELINE_CONFIGS)
+      perform_experiment(X, y, dataset, cv, config.PIPELINE_CONFIGS)
     elif isinstance(config.PIPELINE_CONFIGS, list):
       if not all(config.PIPELINE_CONFIGS[0].keys() == pipeline_config.keys() for pipeline_config in config.PIPELINE_CONFIGS):
         raise ValueError("The pipeline configurations do not match up. Please check your configurations.")
       for pipeline_config in config.PIPELINE_CONFIGS:
-        perform_experiment(X, y, cv, pipeline_config)
+        perform_experiment(X, y, dataset, cv, pipeline_config)
     else:
       raise ValueError("Make sure that the PIPELINE_CONFIG is either a dict or a list.")
  
