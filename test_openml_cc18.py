@@ -26,25 +26,6 @@ TODOs:
    Instead of {"encoder": ..., "imputer": ...} -> [SimilarityEncoder(), SimpleImputer(), ...]
 '''
 
-def get_openml_cc18_benchmark():
-  '''
-  The OpenML servers are slow.
-  Retrieve the benchmark from disk or retrieve from OpenML itself and save to disk otherwise.
-  '''
-  cache_openml_cc18_filename = "cache_openml_cc18.pkl"
-  cache_path = os.path.join(config.CACHE_DIR, cache_openml_cc18_filename)
-
-  if os.path.isfile(cache_path):
-    with open(cache_path, "rb") as f:
-      benchmark_suite = pickle.load(f) 
-  else:
-    benchmark_suite = openml.study.get_suite('OpenML-CC18')
-    if not os.path.isdir(config.CACHE_DIR):
-      os.mkdir(config.CACHE_DIR)
-    with open(cache_path, "wb") as f:
-      pickle.dump(benchmark_suite, f)
-  return benchmark_suite
-
 def evaluate_pipeline(X, y, dataset, cv: list, pipeline_config: dict) -> None:
   if len(np.unique(y)) == 2:
     scorer_name = "roc_auc"
@@ -103,7 +84,7 @@ def evaluate_pipeline(X, y, dataset, cv: list, pipeline_config: dict) -> None:
       w.writerows(results)
 
 if __name__ == "__main__":
-  benchmark_suite = get_openml_cc18_benchmark()
+  benchmark_suite = openml.study.get_suite('OpenML-CC18')
 
   if not os.path.isdir(config.CV_DIR):
     logging.exception("No folder for CV folds found: {}".format(config.CV_DIR))

@@ -3,9 +3,8 @@ from sklearn.ensemble import RandomForestClassifier
 from dirty_cat import SimilarityEncoder, GapEncoder, MinHashEncoder
 
 OPENML_APIKEY   = ""
-CV_DIR          = "cv_folds"
-CACHE_DIR       = "cache"
 OUTPUT_FILENAME = "results.csv"
+CV_DIR          = "cv_folds"
 CV_N_JOBS       = 5
 
 PIPELINE_CONFIGS = [
