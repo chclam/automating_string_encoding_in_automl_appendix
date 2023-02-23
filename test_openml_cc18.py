@@ -20,12 +20,6 @@ import config
 logging.basicConfig(level=logging.INFO)
 openml.config.apikey = config.OPENML_APIKEY  # set the OpenML Api Key
 
-'''
-TODOs: 
- * Change discrete steps for PIPELINE_CONFIG to a simple list of steps:
-   Instead of {"encoder": ..., "imputer": ...} -> [SimilarityEncoder(), SimpleImputer(), ...]
-'''
-
 def evaluate_pipeline(X, y, dataset, cv: list, pipeline_config: dict) -> None:
   if len(np.unique(y)) == 2:
     scorer_name = "roc_auc"
@@ -78,7 +72,7 @@ if __name__ == "__main__":
   benchmark_suite = openml.study.get_suite('OpenML-CC18')
 
   if not os.path.isdir(config.CV_DIR):
-    logging.exception("No folder for CV folds found: {}".format(config.CV_DIR))
+    logging.error("No folder for CV folds found: {}".format(config.CV_DIR))
     exit(1)
 
   for _, t_id in zip(trange(len(benchmark_suite.tasks)), benchmark_suite.tasks):
@@ -104,4 +98,3 @@ if __name__ == "__main__":
     else:
       raise ValueError("PIPELINE_CONFIG is not of type dict or a list.")
  
-
