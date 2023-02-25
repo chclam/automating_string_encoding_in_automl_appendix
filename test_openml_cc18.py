@@ -69,17 +69,14 @@ def evaluate_pipeline(X, y, cv: list, pipeline_config: dict, dataset_id: int, da
       w.writerows(results)
 
 if __name__ == "__main__":
-  benchmark_suite = openml.study.get_suite('OpenML-CC18')
-
   if not os.path.isdir(config.CV_DIR):
     logging.error("No folder for CV folds found: {}".format(config.CV_DIR))
     exit(1)
 
-  for _, t_id in zip(trange(len(benchmark_suite.tasks)), benchmark_suite.tasks):
+  for _, d_id in zip(trange(len(config.INPUT_DATASET_IDS)), config.INPUT_DATASET_IDS):
     try:
       logging.info("Loading dataset from OpenML.")
-      task = openml.tasks.get_task(t_id)
-      dataset = task.get_dataset()
+      dataset = openml.datasets.get_dataset(d_id)
       X, y, _, _ = dataset.get_data(target=dataset.default_target_attribute, dataset_format="dataframe")
     except Exception as e:
       logging.exception("OpenML error", e)
@@ -97,4 +94,5 @@ if __name__ == "__main__":
         evaluate_pipeline(X, y, cv, pipeline_config, dataset.id, dataset.name)
     else:
       raise ValueError("PIPELINE_CONFIG is not of type dict or a list.")
+    exit(0)
  
