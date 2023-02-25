@@ -70,7 +70,7 @@ def evaluate_pipeline(X, y, cv: list, pipeline_config: dict, dataset_id: int, da
 
 if __name__ == "__main__":
   if not os.path.isdir(config.CV_DIR):
-    logging.error("No folder for CV folds found: {}".format(config.CV_DIR))
+    logging.error(f"No folder for CV folds found: {config.CV_DIR}")
     exit(1)
 
   for _, d_id in zip(trange(len(config.INPUT_DATASET_IDS)), config.INPUT_DATASET_IDS):
@@ -82,7 +82,7 @@ if __name__ == "__main__":
       logging.exception("OpenML error", e)
 
     logging.info("Loading CV folds.")
-    with open(f"{config.CV_DIR}/{dataset.id}.pkl", "rb") as f:
+    with open(os.path.join(config.CV_DIR, f"{dataset.id}.pkl"), "rb") as f:
       cv = pickle.load(f) 
 
     if isinstance(config.PIPELINE_CONFIGS, dict):
