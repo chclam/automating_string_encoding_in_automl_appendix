@@ -20,7 +20,7 @@ import config
 logging.basicConfig(level=logging.INFO)
 openml.config.apikey = config.OPENML_APIKEY  # set the OpenML Api Key
 
-def evaluate_pipeline(X, y, dataset, cv: list, pipeline_config: dict) -> None:
+def evaluate_pipeline(X, y, cv: list, pipeline_config: dict, dataset_id: int, dataset_name: str) -> None:
   if len(np.unique(y)) == 2:
     scorer_name = "roc_auc"
     score_func = roc_auc_score
@@ -31,8 +31,8 @@ def evaluate_pipeline(X, y, dataset, cv: list, pipeline_config: dict) -> None:
   # Prepare formatting of the results for every cv-fold
   fold_res = config.RESULT_FORMAT.copy()
   fold_res.update({
-    "data_id": dataset.id,
-    "name": dataset.name,
+    "data_id": dataset_id,
+    "name": dataset_name,
     "metric": scorer_name
   })
   pipeline_config_names = {setting: str(value) for setting, value in pipeline_config.items()}
@@ -89,12 +89,12 @@ if __name__ == "__main__":
       cv = pickle.load(f) 
 
     if isinstance(config.PIPELINE_CONFIGS, dict):
-      evaluate_pipeline(X, y, dataset, cv, config.PIPELINE_CONFIGS)
+      evaluate_pipeline(X, y, cv, config.PIPELINE_CONFIGS, dataset.id, dataset.name)
     elif isinstance(config.PIPELINE_CONFIGS, list):
       if not all(config.PIPELINE_CONFIGS[0].keys() == pipeline_config.keys() for pipeline_config in config.PIPELINE_CONFIGS):
         raise ValueError("The pipeline configurations do not match up. Please check your configurations.")
       for pipeline_config in config.PIPELINE_CONFIGS:
-        evaluate_pipeline(X, y, dataset, cv, pipeline_config)
+        evaluate_pipeline(X, y, cv, pipeline_config, dataset.id, dataset.name)
     else:
       raise ValueError("PIPELINE_CONFIG is not of type dict or a list.")
  
