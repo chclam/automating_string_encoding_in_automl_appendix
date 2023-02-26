@@ -41,9 +41,9 @@ def evaluate_pipeline(X, y, cv: list, pipeline_config: dict, dataset_id: int, da
 
   try:
     y = pd.Series(LabelEncoder().fit_transform(y), index=y.index)
-    # set string features to "category" to avoid issues in libraries
+    # set string features to "object" to avoid issues in libraries
     str_features = [col for col in X if isinstance(X[col].dtype, pd.core.dtypes.dtypes.CategoricalDtype) or X[col].dtype == "O"]
-    X[str_features] = X[str_features].astype("category")
+    X[str_features] = X[str_features].astype("object")
    
     ct = ColumnTransformer(transformers=[("encoder", pipeline_config["string_encoder"], str_features)], remainder="passthrough")
     pipe = make_pipeline(ct, pipeline_config["imputer"], pipeline_config["learning_algorithm"])
@@ -68,30 +68,46 @@ def evaluate_pipeline(X, y, cv: list, pipeline_config: dict, dataset_id: int, da
         w.writeheader()
       w.writerows(results)
 
+def get_dataset(d_id, dataset_dir=""):
+  logging.info("Loading dataset from OpenML.")
+  X, y, dataset_name = None, None, None
+  try:
+    dataset = openml.datasets.get_dataset(d_id)
+    dataset_name = dataset.id
+    if not dataset_dir:
+      X, y, _, _ = dataset.get_data(target=dataset.default_target_attribute, dataset_format="dataframe")
+    else: # get from disk
+      if not os.path.isdir(dataset_dir):
+        raise ValueError(f"Directory {dataset_dir} not found.")
+      with open(os.path.join(dataset_dir, f"{d_id}_X.pkl"), "rb") as f:
+        X = pickle.load(f)
+      with open(os.path.join(dataset_dir, f"{d_id}_y.pkl"), "rb") as f:
+        y = pickle.load(f)
+  except Exception as e:
+    logging.error(f"Failed to retrieve X and y for dataset {d_id}.", e)
+  return X, y, dataset_name
+    
 if __name__ == "__main__":
   if not os.path.isdir(config.CV_DIR):
     logging.error(f"No folder for CV folds found: {config.CV_DIR}")
     exit(1)
 
   for _, d_id in zip(trange(len(config.INPUT_DATASET_IDS)), config.INPUT_DATASET_IDS):
-    try:
-      logging.info("Loading dataset from OpenML.")
-      dataset = openml.datasets.get_dataset(d_id)
-      X, y, _, _ = dataset.get_data(target=dataset.default_target_attribute, dataset_format="dataframe")
-    except Exception as e:
-      logging.exception("OpenML error", e)
+    X, y, dataset_name = get_dataset(d_id, config.DATASET_DIR)
+    if any(x is None for x in [X, y, dataset_name]):
+      logging.warning(f"Skipping {d_id}...")
+      continue
 
-    logging.info("Loading CV folds.")
-    with open(os.path.join(config.CV_DIR, f"{dataset.id}.pkl"), "rb") as f:
+    with open(os.path.join(config.CV_DIR, f"{d_id}.pkl"), "rb") as f:
       cv = pickle.load(f) 
 
     if isinstance(config.PIPELINE_CONFIGS, dict):
-      evaluate_pipeline(X, y, cv, config.PIPELINE_CONFIGS, dataset.id, dataset.name)
+      evaluate_pipeline(X, y, cv, config.PIPELINE_CONFIGS, d_id, dataset_name)
     elif isinstance(config.PIPELINE_CONFIGS, list):
       if not all(config.PIPELINE_CONFIGS[0].keys() == pipeline_config.keys() for pipeline_config in config.PIPELINE_CONFIGS):
         raise ValueError("The pipeline configurations do not match up. Please check your configurations.")
       for pipeline_config in config.PIPELINE_CONFIGS:
-        evaluate_pipeline(X, y, cv, pipeline_config, dataset.id, dataset.name)
+        evaluate_pipeline(X, y, cv, pipeline_config, d_id, dataset_name)
     else:
       raise ValueError("PIPELINE_CONFIG is not of type dict or a list.")
- 
+
