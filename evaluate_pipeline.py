@@ -43,10 +43,13 @@ def evaluate_pipeline(X, y, cv: list, pipeline_config: dict, dataset_id: int, da
     y = pd.Series(LabelEncoder().fit_transform(y), index=y.index)
     # set string features to "object" to avoid issues in libraries
     str_features = [col for col in X if isinstance(X[col].dtype, pd.core.dtypes.dtypes.CategoricalDtype) or X[col].dtype == "O"]
-    X[str_features] = X[str_features].astype("object")
+    X[str_features] = X[str_features].astype("category")
    
-    ct = ColumnTransformer(transformers=[("encoder", pipeline_config["string_encoder"], str_features)], remainder="passthrough")
-    pipe = make_pipeline(ct, pipeline_config["imputer"], pipeline_config["learning_algorithm"])
+    pipe_steps = pipeline_config.copy()
+    if pipe_steps["string_encoder"] is not None:
+      pipe_steps["string_encoder"] = ColumnTransformer(transformers=[("encoder", pipe_steps["string_encoder"], str_features)], remainder="passthrough")
+    
+    pipe = make_pipeline(*[step for step in pipe_steps.values() if step is not None])
     scorer = make_scorer(score_func, greater_is_better=(scorer_name=="roc_auc"), needs_proba=True, labels=y.unique())
 
     logging.info("Starting cross validation.")

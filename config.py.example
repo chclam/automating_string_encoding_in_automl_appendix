@@ -1,6 +1,7 @@
 from sklearn.impute import SimpleImputer
 from sklearn.ensemble import RandomForestClassifier
 from dirty_cat import SimilarityEncoder, GapEncoder, MinHashEncoder
+from tabularfasttext.tabularfasttext import TabularFastText 
 
 OPENML_APIKEY   = ""
 OUTPUT_FILENAME = "results.csv"
@@ -23,6 +24,11 @@ PIPELINE_CONFIGS = [
     "imputer"           : SimpleImputer(strategy="most_frequent"),
     "learning_algorithm": RandomForestClassifier()
   },
+  {
+    "string_encoder"    : None,
+    "imputer"           : None,
+    "learning_algorithm": TabularFastText()
+  }
 ]
 
 RESULT_FORMAT = {
