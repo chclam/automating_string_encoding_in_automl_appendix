@@ -28,7 +28,17 @@ PIPELINE_CONFIGS = [
     "string_encoder"    : None,
     "imputer"           : None,
     "learning_algorithm": TabularFastText()
-  }
+  },
+  {
+    "string_encoder"    : None,
+    "imputer"           : None,
+    "learning_algorithm": TabularFastText(char_level=False)
+  },
+  {
+    "string_encoder"    : None,
+    "imputer"           : None,
+    "learning_algorithm": TabularFastText(char_level=True)
+  },
 ]
 
 RESULT_FORMAT = {
