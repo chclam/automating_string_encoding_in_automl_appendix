@@ -9,9 +9,10 @@ from sklearn.exceptions import NotFittedError
 from random import random
 from sklearn.model_selection import train_test_split 
 import multiprocessing
+import uuid
 
 class TabularFastText(BaseEstimator, ClassifierMixin):
-  def __init__(self, lr=0.1, epoch=5, wordNgrams=1, minn=0, maxn=0, pretrainedVectors="", dim=100, autotune=False, thread=None, autotuneDuration=60*5):
+  def __init__(self, lr=0.1, epoch=5, wordNgrams=1, minn=0, maxn=0, pretrainedVectors="", dim=100, autotune=False, thread=None, autotuneDuration=60*5, char_level=False):
     self._estimator_type = "classifier"
     self.classes_ = None
     self.model_filename = None
@@ -25,6 +26,7 @@ class TabularFastText(BaseEstimator, ClassifierMixin):
     self.autotune = autotune
     self.autotuneDuration = autotuneDuration
     self.thread = multiprocessing.cpu_count() - 1 if thread is None else thread 
+    self.char_level = char_level
     
   def fit(self, X, y):
     '''
@@ -35,7 +37,7 @@ class TabularFastText(BaseEstimator, ClassifierMixin):
         os.mkdir("cache")
       except Exception as e:
         print(e)
-    data_fn = f"cache/test_data{time()}.txt"
+    data_fn = f"cache/test_data{str(uuid.uuid1())}.txt"
     val_data_fn = data_fn.replace(".txt", "_val.txt")
 
     if self.classes_ is None:
@@ -51,7 +53,7 @@ class TabularFastText(BaseEstimator, ClassifierMixin):
       self.preprocess(X, y, data_fn=data_fn)
       model = fasttext.train_supervised(data_fn, lr=self.lr, epoch=self.epoch, wordNgrams=self.wordNgrams, minn=self.minn, maxn=self.maxn, pretrainedVectors=self.pretrainedVectors, dim=self.dim)
 
-    self.model_filename = f"cache/ft_model_{time()}{random()}.bin"
+    self.model_filename = f"cache/ft_model_{str(uuid.uuid1())}.bin"
     # save and load the model due to issues with multiprocessing when passing on the fit model.
     model.save_model(self.model_filename)
     return self
@@ -84,7 +86,19 @@ class TabularFastText(BaseEstimator, ClassifierMixin):
     y_pred = self.predict(X)
     return accuracy_score(y_true, y_pred)
 
-  def preprocess(self, X, y=None, del_spec_chars=True, data_fn=f"cache/test_data{time()}.txt") -> str:
+  def _get_n_grams(self, x, char_level=True, sep=" "):
+    sliced_x = x.split(sep)
+    ret = []
+    for word in sliced_x:
+      if "__label__" in word or any(x.isdigit() for x in word):
+        ret.append(word)
+      else:
+        for i in range(0, len(word)-2, 1):
+          ret.append(word[i:i+3])
+    ret = " ".join(ret)
+    return ret
+
+  def preprocess(self, X, y=None, del_spec_chars=True, data_fn=f"cache/test_data{str(uuid.uuid1())}.txt") -> str:
     X = pd.DataFrame(X, columns=X.columns if isinstance(X, pd.DataFrame) else None).reset_index(drop=True)
     data = X.copy()
     obj_cols = [col for col in X.columns if X[col].dtype == "O" or isinstance(X[col].dtype, pd.core.dtypes.dtypes.CategoricalDtype)]
@@ -101,7 +115,6 @@ class TabularFastText(BaseEstimator, ClassifierMixin):
       y = y.astype(str).apply(lambda r: "".join(v for v in r.values), axis=1)
       data = pd.concat([data, y], axis=1)
       # Sloppy hack for appending "__label__" faster to all values  
-    pd.set_option('display.max_colwidth', None) # do this so that .to_string() actually converts all data to string
     data.to_csv(data_fn, header=None, index=None, sep=' ', mode='w')
     # call bash script for preprocessing
     sed_cmd = "%s %s" % (os.path.join('tabularfasttext','preprocess_X.sh'), data_fn)
@@ -110,5 +123,11 @@ class TabularFastText(BaseEstimator, ClassifierMixin):
       ret = f.read()
     if ret[-1] == "\n" and len(ret) > 0:
       ret = ret[:(len(ret) - 1)] # remove trailing newline
+    if self.char_level:
+      ret = ret.split("\n")
+      ret = [self._get_n_grams(x) for x in ret]
+      ret = "\n".join(ret)
+      with open(data_fn, "w") as f:
+        f.write(ret)
     return ret 
 

@@ -76,7 +76,7 @@ def get_dataset(d_id, dataset_dir=""):
   X, y, dataset_name = None, None, None
   try:
     dataset = openml.datasets.get_dataset(d_id)
-    dataset_name = dataset.id
+    dataset_name = dataset.name
     if not dataset_dir:
       X, y, _, _ = dataset.get_data(target=dataset.default_target_attribute, dataset_format="dataframe")
     else: # get from disk
