@@ -9,6 +9,7 @@ import logging
 import numpy as np
 import pandas as pd
 from tqdm import trange
+from sklearn.base import clone
 from sklearn.metrics import roc_auc_score, log_loss, make_scorer
 from sklearn.pipeline import make_pipeline
 from sklearn.compose import ColumnTransformer
@@ -46,8 +47,12 @@ def evaluate_pipeline(X, y, cv: list, pipeline_config: dict, dataset_id: int, da
     X[str_features] = X[str_features].astype("category")
    
     pipe_steps = pipeline_config.copy()
+
     if pipe_steps["string_encoder"] is not None:
       pipe_steps["string_encoder"] = ColumnTransformer(transformers=[("encoder", pipe_steps["string_encoder"], str_features)], remainder="passthrough")
+
+    if pipe_steps["learning_algorithm"] is not None:
+      pipe_steps["learning_algorithm"] = clone(pipe_steps["learning_algorithm"])
     
     pipe = make_pipeline(*[step for step in pipe_steps.values() if step is not None])
     scorer = make_scorer(score_func, greater_is_better=(scorer_name=="roc_auc"), needs_proba=True, labels=y.unique())
