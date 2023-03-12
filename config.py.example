@@ -2,11 +2,13 @@ from sklearn.impute import SimpleImputer
 from sklearn.ensemble import RandomForestClassifier
 from dirty_cat import SimilarityEncoder, GapEncoder, MinHashEncoder
 from tabularfasttext.tabularfasttext import TabularFastText 
+from sklearn.dummy import DummyClassifier
 
 OPENML_APIKEY   = ""
 OUTPUT_FILENAME = "results.csv"
 CV_DIR          = "cv_folds"
 CV_N_JOBS       = 5
+DATASET_DIR     = "datasets"
 
 PIPELINE_CONFIGS = [
   {
@@ -20,7 +22,7 @@ PIPELINE_CONFIGS = [
     "learning_algorithm": RandomForestClassifier()
   },
   {
-    "string_encoder"    : MinHashEncoder(),
+    "string_encoder"    : MinHashEncoder(n_jobs=-1),
     "imputer"           : SimpleImputer(strategy="most_frequent"),
     "learning_algorithm": RandomForestClassifier()
   },
@@ -39,6 +41,11 @@ PIPELINE_CONFIGS = [
     "imputer"           : None,
     "learning_algorithm": TabularFastText(char_level=True)
   },
+  {
+    "string_encoder"    : None,
+    "imputer"           : None,
+    "learning_algorithm": DummyClassifier(strategy="prior")
+  },
 ]
 
 RESULT_FORMAT = {
@@ -56,8 +63,9 @@ RESULT_FORMAT = {
 
 OPENML_CC18_DATASET_IDS = [3, 6, 11, 12, 14, 15, 16, 18, 22, 23, 28, 29, 31, 32, 37, 44, 46, 50, 54, 151, 182, 188, 38, 307, 300, 458, 469, 554, 1049, 1050, 1053, 1063, 1067, 1068, 1590, 4134, 1510, 1489, 1494, 1497, 1501, 1480, 1485, 1486, 1487, 1468, 1475, 1462, 1464, 4534, 6332, 1461, 4538, 1478, 23381, 40499, 40668, 40966, 40982, 40994, 40983, 40975, 40984, 40979, 40996, 41027, 23517, 40923, 40927, 40978, 40670, 40701]
 REDUCED_OPENML_CC18_DATASET_IDS = [6, 15, 16, 22, 28, 29, 32, 37, 38, 50, 54, 182, 188, 300, 307, 458, 469, 1063, 1462, 1468, 1478, 4534, 40499, 40701, 40966, 40975, 40978, 40979, 40982, 40983]
-STRING_FEATURE_DATASET_IDS = [42078, 42803, 42132, 43044, 42076, 42738, 42530, 42133, 43508, 43579, 42723, 43651, 42163, 42080, "MET_OBJECTS"]
-
+STRING_FEATURE_DATASET_IDS = [42076, 42078, 42080, 42132, 42133, 42163, 42530, 42723, 42738, 42803, 43044, 43508, 43579, 43651, "MET_OBJECTS"]
 
 # The dataset ids to run the experiment on
-INPUT_DATASET_IDS = OPENML_CC18_DATASET_IDS
+INPUT_DATASET_IDS = STRING_FEATURE_DATASET_IDS
+#SKIP_DATASETS = [42078, 42803, 42132, 43044, 42076, 42738]
+SKIP_DATASETS = []

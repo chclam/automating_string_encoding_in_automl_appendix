@@ -79,28 +79,40 @@ def evaluate_pipeline(X, y, cv: list, pipeline_config: dict, dataset_id: int, da
 def get_dataset(d_id, dataset_dir=""):
   logging.info("Loading dataset from OpenML.")
   X, y, dataset_name = None, None, None
+  X_path = os.path.join(dataset_dir, f"{d_id}_X.pkl")
+  y_path = os.path.join(dataset_dir, f"{d_id}_y.pkl")
   try:
-    dataset = openml.datasets.get_dataset(d_id)
-    dataset_name = dataset.name
-    if not dataset_dir:
-      X, y, _, _ = dataset.get_data(target=dataset.default_target_attribute, dataset_format="dataframe")
-    else: # get from disk
+    # Get dataset name 
+    if isinstance(d_id, int):
+      dataset = openml.datasets.get_dataset(d_id)
+      dataset_name = dataset.name
+    elif isinstance(d_id, str):
+      dataset_name = d_id 
+      logging.warning(f"Assuming custom dataset...{d_id}.")
+    else:
+      raise Exception(f"Unknown type for d_id: {d_id}")
+    # Get X, y dataframes
+    if dataset_dir and os.path.isfile(X_path) and os.path.isfile(y_path):
       if not os.path.isdir(dataset_dir):
         raise ValueError(f"Directory {dataset_dir} not found.")
-      with open(os.path.join(dataset_dir, f"{d_id}_X.pkl"), "rb") as f:
+      with open(X_path, "rb") as f:
         X = pickle.load(f)
-      with open(os.path.join(dataset_dir, f"{d_id}_y.pkl"), "rb") as f:
+      with open(y_path, "rb") as f:
         y = pickle.load(f)
+    else:
+      X, y, _, _ = dataset.get_data(target=dataset.default_target_attribute, dataset_format="dataframe")
   except Exception as e:
     logging.error(f"Failed to retrieve X and y for dataset {d_id}.", e)
   return X, y, dataset_name
     
 if __name__ == "__main__":
   if not os.path.isdir(config.CV_DIR):
-    logging.error(f"No folder for CV folds found: {config.CV_DIR}")
+    logging.exception(f"No folder for CV folds found: {config.CV_DIR}")
     exit(1)
 
   for _, d_id in zip(trange(len(config.INPUT_DATASET_IDS)), config.INPUT_DATASET_IDS):
+    if d_id in config.SKIP_DATASETS:
+      continue
     X, y, dataset_name = get_dataset(d_id, config.DATASET_DIR)
     if any(x is None for x in [X, y, dataset_name]):
       logging.warning(f"Skipping {d_id}...")
@@ -113,9 +125,11 @@ if __name__ == "__main__":
       evaluate_pipeline(X, y, cv, config.PIPELINE_CONFIGS, d_id, dataset_name)
     elif isinstance(config.PIPELINE_CONFIGS, list):
       if not all(config.PIPELINE_CONFIGS[0].keys() == pipeline_config.keys() for pipeline_config in config.PIPELINE_CONFIGS):
-        raise ValueError("The pipeline configurations do not match up. Please check your configurations.")
+        logging.exception("The pipeline configurations do not match up. Please check your configurations.")
+        exit(1)
       for pipeline_config in config.PIPELINE_CONFIGS:
         evaluate_pipeline(X, y, cv, pipeline_config, d_id, dataset_name)
     else:
-      raise ValueError("PIPELINE_CONFIG is not of type dict or a list.")
+      logging.exception("PIPELINE_CONFIG is not of type dict or a list.")
+      exit(1)
 

@@ -11,6 +11,8 @@ from sklearn.model_selection import train_test_split
 import multiprocessing
 import uuid
 
+fasttext.FastText.eprint = lambda x: None # surpress the load_model warning
+
 class TabularFastText(BaseEstimator, ClassifierMixin):
   def __init__(self, lr=0.1, epoch=5, wordNgrams=1, minn=0, maxn=0, pretrainedVectors="", dim=100, autotune=False, thread=None, autotuneDuration=60*5, char_level=False):
     self._estimator_type = "classifier"
